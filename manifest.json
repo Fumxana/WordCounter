@@ -1,0 +1,28 @@
+{
+    "manifest_version": 3,
+    "name": "Quick Word Counter",
+    "version": "1.0",
+    "description": "Simple, stylish word and character counter with Auto Mode.",
+    "permissions": [
+        "storage"
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "128": "icon128.png"
+        }
+    },
+    "icons": {
+        "128": "icon128.png"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
+}
