@@ -5,13 +5,74 @@ document.addEventListener('DOMContentLoaded', () => {
         noSpaceCount: document.getElementById('count-no-space'),
         lineCount: document.getElementById('count-lines'),
         wordCount: document.getElementById('count-words'),
-        autoModeToggle: document.getElementById('autoModeToggle')
+        autoModeToggle: document.getElementById('autoModeToggle'),
+        langToggle: document.getElementById('langToggle'),
+        hintText: document.getElementById('hint-text'),
+        labels: {
+            chars: document.querySelector('#count-chars + .stat-label'),
+            nospace: document.querySelector('#count-no-space + .stat-label'),
+            lines: document.querySelector('#count-lines + .stat-label'),
+            words: document.querySelector('#count-words + .stat-label')
+        }
     };
 
-    // Load Auto Mode setting
-    chrome.storage.local.get(['autoMode'], (result) => {
+    const translations = {
+        ja: {
+            chars: '文字数',
+            nospace: '空白なし',
+            lines: '行数',
+            words: '単語数',
+            hint: '※ページ再読み込みが必要な場合があります',
+            placeholder: 'ここにテキストを貼り付け...',
+            langBtn: 'JP' // Show current language or target? Usually show current.
+        },
+        en: {
+            chars: 'Chars',
+            nospace: 'No Space',
+            lines: 'Lines',
+            words: 'Words',
+            hint: '* Page reload may be required',
+            placeholder: 'Paste text here...',
+            langBtn: 'EN'
+        }
+    };
+
+    let currentLang = 'ja';
+
+    // Load Settings
+    chrome.storage.local.get(['autoMode', 'language'], (result) => {
         elements.autoModeToggle.checked = result.autoMode || false;
+        if (result.language) {
+            setLanguage(result.language);
+        } else {
+            setLanguage('ja'); // Default
+        }
     });
+
+    // Toggle Language
+    elements.langToggle.addEventListener('click', () => {
+        const newLang = currentLang === 'ja' ? 'en' : 'ja';
+        setLanguage(newLang);
+        chrome.storage.local.set({ language: newLang });
+    });
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+
+        // Update Latels
+        elements.labels.chars.textContent = t.chars;
+        elements.labels.nospace.textContent = t.nospace;
+        elements.labels.lines.textContent = t.lines;
+        elements.labels.words.textContent = t.words;
+
+        // Update Hint & Placeholder
+        elements.hintText.textContent = t.hint;
+        elements.input.placeholder = t.placeholder;
+
+        // Update Button Text
+        elements.langToggle.textContent = lang.toUpperCase();
+    }
 
     // Toggle Auto Mode
     elements.autoModeToggle.addEventListener('change', (e) => {
