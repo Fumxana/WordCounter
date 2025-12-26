@@ -1,15 +1,28 @@
 let autoModeEnabled = false;
+let currentLang = 'ja';
+
+const translations = {
+  ja: { chars: '文字数', nospace: '空白なし', lines: '行数', words: '単語数' },
+  en: { chars: 'Chars', nospace: 'No Space', lines: 'Lines', words: 'Words' }
+};
 
 // Sync state
-chrome.storage.local.get(['autoMode'], (result) => {
+chrome.storage.local.get(['autoMode', 'language'], (result) => {
   autoModeEnabled = result.autoMode || false;
-  console.log('WordCounter: Auto Mode initialized:', autoModeEnabled);
+  currentLang = result.language || 'ja';
+  console.log('WordCounter: Initialized. Auto:', autoModeEnabled, 'Lang:', currentLang);
 });
 
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.autoMode) {
     autoModeEnabled = changes.autoMode.newValue;
     console.log('WordCounter: Auto Mode changed to:', autoModeEnabled);
+  }
+  if (changes.language) {
+    currentLang = changes.language.newValue;
+    if (tooltip) {
+      updateTooltipLabels();
+    }
   }
 });
 
@@ -32,14 +45,14 @@ function createTooltip() {
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(4px);
       color: #333;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 13px;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 14px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.15);
       border: 2px solid #fff;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 10px;
       opacity: 0;
       transform: translateY(10px);
       transition: opacity 0.2s, transform 0.2s;
@@ -53,17 +66,31 @@ function createTooltip() {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
+      gap: 24px;
     }
     .label {
-      color: #888;
-      font-size: 10px;
+      color: #777;
+      font-size: 11px;
       font-weight: 700;
     }
     .value {
-      font-weight: 900;
-      color: #ff6b6b; /* Pop red/pink */
+      font-weight: 800;
+      color: #555;
       font-size: 1.1em;
+    }
+    .row.primary {
+      padding-bottom: 6px;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 4px;
+    }
+    .row.primary .label {
+       font-size: 12px;
+       color: #ff6b6b;
+    }
+    .row.primary .value {
+       font-size: 1.6em;
+       font-weight: 900;
+       color: #ff6b6b;
     }
   `;
   shadow.appendChild(style);
@@ -71,16 +98,20 @@ function createTooltip() {
   const container = document.createElement('div');
   container.className = 'wc-tooltip';
   container.innerHTML = `
-    <div class="row">
-      <span class="label">文字数</span>
+    <div class="row primary">
+      <span class="label" id="lbl-chars"></span>
       <span class="value" id="val-chars">0</span>
     </div>
     <div class="row">
-      <span class="label">空白なし</span>
+      <span class="label" id="lbl-nospace"></span>
       <span class="value" id="val-nospace">0</span>
     </div>
     <div class="row">
-      <span class="label">単語数</span>
+      <span class="label" id="lbl-lines"></span>
+      <span class="value" id="val-lines">0</span>
+    </div>
+    <div class="row">
+      <span class="label" id="lbl-words"></span>
       <span class="value" id="val-words">0</span>
     </div>
   `;
@@ -88,11 +119,27 @@ function createTooltip() {
 
   document.body.appendChild(host);
 
+  // Set initial labels
+  updateTooltipLabels(container);
+
   return { host, container, shadow };
+}
+
+function updateTooltipLabels(containerEl) {
+  const t = translations[currentLang];
+  const target = containerEl || (tooltip ? tooltip.container : null);
+  if (!target) return;
+
+  target.querySelector('#lbl-chars').textContent = t.chars;
+  target.querySelector('#lbl-nospace').textContent = t.nospace;
+  target.querySelector('#lbl-lines').textContent = t.lines;
+  target.querySelector('#lbl-words').textContent = t.words;
 }
 
 function updateTooltipPosition(rect) {
   if (!tooltip) tooltip = createTooltip();
+
+  updateTooltipLabels();
 
   const { host, container } = tooltip;
 
@@ -141,6 +188,7 @@ document.addEventListener('mouseup', () => {
 
       const chars = text.length;
       const noSpace = text.replace(/\s/g, '').length;
+      const lines = text ? text.split(/\n/).length : 0;
 
       // Japanese detection
       const hasJapanese = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(text);
@@ -153,10 +201,12 @@ document.addEventListener('mouseup', () => {
 
       const charEl = tooltip.shadow.getElementById('val-chars');
       const noSpaceEl = tooltip.shadow.getElementById('val-nospace');
+      const linesEl = tooltip.shadow.getElementById('val-lines');
       const wordsEl = tooltip.shadow.getElementById('val-words');
 
       charEl.textContent = chars;
       noSpaceEl.textContent = noSpace;
+      linesEl.textContent = lines;
       wordsEl.textContent = words;
 
       updateTooltipPosition(rect);
@@ -167,13 +217,5 @@ document.addEventListener('mouseup', () => {
 });
 
 document.addEventListener('mousedown', (e) => {
-  // If clicking outside, hide
-  // But mouseup handles the new selection logic.
-  // We strictly need to hide if selection is cleared.
-  // But mousedown starts a new selection usually.
-  // Let's just rely on mouseup or selectionchange.
-  // Actually, standard behavior: click clears selection usually.
-
-  // We can just hide on mousedown to be responsive
   hideTooltip();
 });

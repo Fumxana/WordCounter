@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
             chars: document.querySelector('#count-chars + .stat-label'),
             nospace: document.querySelector('#count-no-space + .stat-label'),
             lines: document.querySelector('#count-lines + .stat-label'),
-            words: document.querySelector('#count-words + .stat-label')
+            words: document.querySelector('#count-words + .stat-label'),
+            auto: document.getElementById('auto-mode-label')
         }
     };
 
@@ -24,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
             words: '単語数',
             hint: '※ページ再読み込みが必要な場合があります',
             placeholder: 'ここにテキストを貼り付け...',
-            langBtn: 'JP' // Show current language or target? Usually show current.
+            langBtn: 'JP',
+            auto: '自動'
         },
         en: {
             chars: 'Chars',
@@ -33,7 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
             words: 'Words',
             hint: '* Page reload may be required',
             placeholder: 'Paste text here...',
-            langBtn: 'EN'
+            langBtn: 'EN',
+            auto: 'Auto'
         }
     };
 
@@ -65,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.labels.nospace.textContent = t.nospace;
         elements.labels.lines.textContent = t.lines;
         elements.labels.words.textContent = t.words;
+        if (elements.labels.auto) elements.labels.auto.textContent = t.auto;
 
         // Update Hint & Placeholder
         elements.hintText.textContent = t.hint;
